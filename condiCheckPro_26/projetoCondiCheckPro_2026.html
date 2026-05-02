@@ -1,0 +1,1095 @@
+HTML
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CondoCheck Pro - Sistema de Condomínio</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <!-- jsPDF para geração de PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .garage-slot {
+            width: 60px;
+            height: 80px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        
+        .garage-fixed {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+            border: 2px solid #d68910;
+        }
+        
+        .garage-free {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: 2px solid #27ae60;
+        }
+        
+        .garage-occupied {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            border: 2px solid #c0392b;
+        }
+        
+        .garage-auto {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            border: 2px solid #8e44ad;
+        }
+        
+        .chat-container {
+            height: 60vh;
+            overflow-y: auto;
+            background: #e5ddd5;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+        
+        .message-sent {
+            background: #dcf8c6;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .message-received {
+            background: white;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+        
+        .sorteio-animation {
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .page-section {
+            display: none;
+        }
+        
+        .page-section.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .mobile-bottom-nav {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .desktop-nav {
+                display: none;
+            }
+            .mobile-bottom-nav {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: white;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+                z-index: 1000;
+                justify-content: space-around;
+                padding: 10px 0;
+            }
+            .main-content {
+                margin-bottom: 70px;
+            }
+            .garage-slot {
+                width: 45px;
+                height: 60px;
+                font-size: 0.8rem;
+            }
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar Desktop -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow desktop-nav">
+        <div class="container">
+            <a class="navbar-brand" href="#" onclick="showPage('dashboard')">
+                <i class="bi bi-building"></i> CondoCheck Pro
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('dashboard')"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('condominos')"><i class="bi bi-people"></i> Condôminos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('garagens')"><i class="bi bi-car-front"></i> Garagens</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('sorteio')"><i class="bi bi-shuffle"></i> Sorteio</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('reservas')"><i class="bi bi-calendar-check"></i> Reservas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('utensilios')"><i class="bi bi-box-seam"></i> Utensílios</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" onclick="showPage('chat')"><i class="bi bi-chat-dots"></i> Chat</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container main-content mt-4 mb-5">
+        
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="page-section active">
+            <h2 class="mb-4"><i class="bi bi-speedometer2"></i> Dashboard</h2>
+            <div class="row g-4">
+                <div class="col-md-3 col-6">
+                    <div class="card stat-card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-people fs-1"></i>
+                            <h3 id="dash-condominos">0</h3>
+                            <p class="mb-0">Condôminos</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card bg-success text-white h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-car-front fs-1"></i>
+                            <h3 id="dash-vagas">0</h3>
+                            <p class="mb-0">Vagas Livres</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card bg-warning text-dark h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-calendar-event fs-1"></i>
+                            <h3 id="dash-reservas">0</h3>
+                            <p class="mb-0">Reservas</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card bg-info text-white h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-chat-square-text fs-1"></i>
+                            <h3 id="dash-mensagens">0</h3>
+                            <p class="mb-0">Mensagens</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Visão Geral das Garagens</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="dash-garages-preview" class="d-flex flex-wrap justify-content-center"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">Próximas Reservas</h5>
+                        </div>
+                        <div class="card-body" id="dash-reservas-list">
+                            <p class="text-muted">Nenhuma reserva próxima</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONDÔMINOS -->
+        <div id="condominos" class="page-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-people"></i> Cadastro de Condôminos</h2>
+                <button class="btn btn-primary" onclick="openModal('condominoModal')">
+                    <i class="bi bi-plus-lg"></i> Novo Condômino
+                </button>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Apto</th>
+                                    <th>Cargo</th>
+                                    <th>Veículos</th>
+                                    <th>Status Sorteio</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-condominos"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GARAGENS -->
+        <div id="garagens" class="page-section">
+            <h2 class="mb-4"><i class="bi bi-car-front"></i> Mapa de Garagens</h2>
+            <div class="card">
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <strong>Legenda:</strong>
+                        <span class="badge bg-warning ms-2">Fixa</span> Síndico/Subsíndico
+                        <span class="badge bg-success ms-2">Livre</span> Disponível
+                        <span class="badge bg-danger ms-2">Ocupada</span> Sorteada
+                        <span class="badge bg-purple ms-2" style="background:#9b59b6">Auto</span> 1 Veículo (Automático)
+                    </div>
+                    <div id="mapa-garagens" class="d-flex flex-wrap justify-content-center p-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SORTEIO -->
+        <div id="sorteio" class="page-section">
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="card border-primary">
+                        <div class="card-header bg-primary text-white text-center">
+                            <h3 class="mb-0"><i class="bi bi-shuffle"></i> Sistema de Sorteio</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-warning">
+                                <h5><i class="bi bi-info-circle"></i> Regras do Sorteio:</h5>
+                                <ul class="mb-0">
+                                    <li>Síndico e Subsíndico possuem vagas fixas (excluídos)</li>
+                                    <li>Condôminos com apenas <strong>1 veículo</strong> recebem vaga automática</li>
+                                    <li>Apenas moradores com <strong>2+ veículos</strong> participam do sorteio aleatório</li>
+                                    <li>Algoritmo Fisher-Yates garante aleatoriedade real</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="text-center mb-4">
+                                <button class="btn btn-primary btn-lg px-5" onclick="realizarSorteio()">
+                                    <i class="bi bi-play-circle"></i> Realizar Sorteio
+                                </button>
+                            </div>
+                            
+                            <div id="resultado-sorteio" class="d-none">
+                                <h4 class="text-center mb-3">Resultado do Sorteio</h4>
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead class="table-success">
+                                            <tr>
+                                                <th>Ordem</th>
+                                                <th>Condômino</th>
+                                                <th>Apartamento</th>
+                                                <th>Vaga Atribuída</th>
+                                                <th>Tipo</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabela-resultado"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESERVAS -->
+        <div id="reservas" class="page-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-calendar-check"></i> Reservas do Salão</h2>
+                <div>
+                    <button class="btn btn-outline-primary me-2" onclick="gerarPDFUtensilios()">
+                        <i class="bi bi-file-earmark-pdf"></i> Lista de Utensílios
+                    </button>
+                    <button class="btn btn-primary" onclick="openModal('reservaModal')">
+                        <i class="bi bi-plus-lg"></i> Nova Reserva
+                    </button>
+                </div>
+            </div>
+            
+            <div class="row" id="lista-reservas"></div>
+        </div>
+
+        <!-- UTENSÍLIOS -->
+        <div id="utensilios" class="page-section">
+            <h2 class="mb-4"><i class="bi bi-box-seam"></i> Utensílios da Cozinha</h2>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Quantidade Total</th>
+                                    <th>Disponível</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-utensilios"></tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-primary" onclick="gerarPDFUtensilios()">
+                        <i class="bi bi-download"></i> Baixar Relação em PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHAT -->
+        <div id="chat" class="page-section">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Chat do Condomínio</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="chat-container" id="chat-messages"></div>
+                    <div class="p-3 bg-light border-top">
+                        <form onsubmit="enviarMensagem(event)">
+                            <div class="input-group">
+                                <select class="form-select" id="chat-condomino" style="max-width: 150px;">
+                                    <option value="">Selecione...</option>
+                                </select>
+                                <input type="text" class="form-control" id="chat-input" placeholder="Digite sua mensagem..." required>
+                                <button class="btn btn-success" type="submit"><i class="bi bi-send"></i></button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Mobile Bottom Nav -->
+    <div class="mobile-bottom-nav">
+        <a href="#" class="text-center text-decoration-none text-dark" onclick="showPage('dashboard')">
+            <i class="bi bi-speedometer2 fs-4"></i><br><small>Home</small>
+        </a>
+        <a href="#" class="text-center text-decoration-none text-dark" onclick="showPage('sorteio')">
+            <i class="bi bi-shuffle fs-4"></i><br><small>Sorteio</small>
+        </a>
+        <a href="#" class="text-center text-decoration-none text-dark" onclick="showPage('reservas')">
+            <i class="bi bi-calendar fs-4"></i><br><small>Reservas</small>
+        </a>
+        <a href="#" class="text-center text-decoration-none text-dark" onclick="showPage('chat')">
+            <i class="bi bi-chat fs-4"></i><br><small>Chat</small>
+        </a>
+    </div>
+
+    <!-- Modal Condômino -->
+    <div class="modal fade" id="condominoModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Novo Condômino</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form onsubmit="salvarCondomino(event)">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nome Completo</label>
+                            <input type="text" class="form-control" id="cond-nome" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Apartamento</label>
+                            <input type="text" class="form-control" id="cond-apt" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cargo</label>
+                            <select class="form-select" id="cond-cargo">
+                                <option value="Morador">Morador</option>
+                                <option value="Sindico">Síndico</option>
+                                <option value="Subsindico">Subsíndico</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Quantidade de Veículos</label>
+                            <input type="number" class="form-control" id="cond-veiculos" min="1" value="1" required>
+                            <small class="text-muted">Se = 1, recebe vaga automática (não entra no sorteio)</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Reserva -->
+    <div class="modal fade" id="reservaModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nova Reserva</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form onsubmit="salvarReserva(event)">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Condômino</label>
+                            <select class="form-select" id="res-condomino" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Data</label>
+                            <input type="date" class="form-control" id="res-data" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label">Início</label>
+                                <input type="time" class="form-control" id="res-inicio" value="14:00" required>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">Fim</label>
+                                <input type="time" class="form-control" id="res-fim" value="22:00" required>
+                            </div>
+                        </div>
+                        <div class="mb-3 mt-3">
+                            <label class="form-label">Observações</label>
+                            <textarea class="form-control" id="res-obs" rows="2"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Reservar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading">
+        <div class="text-center">
+            <div class="spinner-border mb-3" role="status"></div>
+            <p>Realizando sorteio...</p>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // ===== DATA STORE (LocalStorage) =====
+        const Store = {
+            init() {
+                if (!localStorage.getItem('condocheck_initialized')) {
+                    // Dados iniciais para demonstração
+                    const condominoes = [
+                        {id: 1, nome: 'João Silva', apt: '101', cargo: 'Sindico', veiculos: 2},
+                        {id: 2, nome: 'Maria Santos', apt: '102', cargo: 'Subsindico', veiculos: 1},
+                        {id: 3, nome: 'Carlos Oliveira', apt: '103', cargo: 'Morador', veiculos: 2},
+                        {id: 4, nome: 'Ana Pereira', apt: '104', cargo: 'Morador', veiculos: 1},
+                        {id: 5, nome: 'Roberto Lima', apt: '201', cargo: 'Morador', veiculos: 3},
+                        {id: 6, nome: 'Fernanda Costa', apt: '202', cargo: 'Morador', veiculos: 2}
+                    ];
+                    
+                    const garagens = [
+                        {id: 1, numero: 1, fixa: true, ocupada: true, unidade: 'Síndico', tipo: 'fixa'},
+                        {id: 2, numero: 2, fixa: true, ocupada: true, unidade: 'Subsíndico', tipo: 'fixa'},
+                        {id: 3, numero: 3, fixa: false, ocupada: false, unidade: null, tipo: 'sorteada'},
+                        {id: 4, numero: 4, fixa: false, ocupada: false, unidade: null, tipo: 'sorteada'},
+                        {id: 5, numero: 5, fixa: false, ocupada: false, unidade: null, tipo: 'sorteada'},
+                        {id: 6, numero: 6, fixa: false, ocupada: false, unidade: null, tipo: 'sorteada'},
+                        {id: 7, numero: 7, fixa: false, ocupada: false, unidade: null, tipo: 'sorteada'},
+                        {id: 8, numero: 8, fixa: false, ocupada: false, unidade: null, tipo: 'sorteada'}
+                    ];
+                    
+                    const utensilios = [
+                        {id: 1, nome: 'Garfo', total: 50, disponivel: 50},
+                        {id: 2, nome: 'Faca', total: 50, disponivel: 50},
+                        {id: 3, nome: 'Copo', total: 100, disponivel: 100},
+                        {id: 4, nome: 'Prato', total: 100, disponivel: 100},
+                        {id: 5, nome: 'Panela Grande', total: 5, disponivel: 5},
+                        {id: 6, nome: 'Jogo Americano', total: 20, disponivel: 20}
+                    ];
+                    
+                    const mensagens = [
+                        {id: 1, condomino_id: 1, nome: 'João Silva', texto: 'Bom dia, vizinhos!', hora: '08:00'},
+                        {id: 2, condomino_id: 3, nome: 'Carlos Oliveira', texto: 'Alguém viu meu gato?', hora: '09:30'}
+                    ];
+                    
+                    const reservas = [];
+                    const resultadosSorteio = [];
+                    
+                    localStorage.setItem('condocheck_condominoes', JSON.stringify(condominoes));
+                    localStorage.setItem('condocheck_garagens', JSON.stringify(garagens));
+                    localStorage.setItem('condocheck_utensilios', JSON.stringify(utensilios));
+                    localStorage.setItem('condocheck_mensagens', JSON.stringify(mensagens));
+                    localStorage.setItem('condocheck_reservas', JSON.stringify(reservas));
+                    localStorage.setItem('condocheck_resultados', JSON.stringify(resultadosSorteio));
+                    localStorage.setItem('condocheck_initialized', 'true');
+                    
+                    // Auto-atribuição para quem tem 1 veículo
+                    this.atribuirVagasAutomaticas();
+                }
+            },
+            
+            get(key) {
+                return JSON.parse(localStorage.getItem('condocheck_' + key) || '[]');
+            },
+            
+            set(key, value) {
+                localStorage.setItem('condocheck_' + key, JSON.stringify(value));
+            },
+            
+            atribuirVagasAutomaticas() {
+                const condominoes = this.get('condominoes');
+                const garagens = this.get('garagens');
+                
+                condominoes.forEach(cond => {
+                    if (cond.veiculos === 1 && cond.cargo === 'Morador') {
+                        const vagaLivre = garagens.find(g => !g.ocupada && !g.fixa);
+                        if (vagaLivre) {
+                            vagaLivre.ocupada = true;
+                            vagaLivre.unidade = cond.apt;
+                            vagaLivre.tipo = 'auto';
+                            vagaLivre.condomino_id = cond.id;
+                        }
+                    }
+                });
+                
+                this.set('garagens', garagens);
+            }
+        };
+
+        // ===== NAVIGATION =====
+        function showPage(pageId) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            window.scrollTo(0, 0);
+            updateView();
+        }
+
+        function openModal(id) {
+            new bootstrap.Modal(document.getElementById(id)).show();
+        }
+
+        // ===== DASHBOARD =====
+        function updateDashboard() {
+            const condominoes = Store.get('condominoes');
+            const garagens = Store.get('garagens');
+            const reservas = Store.get('reservas');
+            const mensagens = Store.get('mensagens');
+            
+            document.getElementById('dash-condominos').textContent = condominoes.length;
+            document.getElementById('dash-vagas').textContent = garagens.filter(g => !g.ocupada).length;
+            document.getElementById('dash-reservas').textContent = reservas.length;
+            document.getElementById('dash-mensagens').textContent = mensagens.length;
+            
+            // Preview garagens
+            const container = document.getElementById('dash-garages-preview');
+            container.innerHTML = '';
+            garagens.slice(0, 8).forEach(g => {
+                const div = document.createElement('div');
+                div.className = `garage-slot ${g.fixa ? 'garage-fixed' : g.ocupada ? (g.tipo === 'auto' ? 'garage-auto' : 'garage-occupied') : 'garage-free'}`;
+                div.innerHTML = `<small>Vaga</small><div>${g.numero}</div>`;
+                container.appendChild(div);
+            });
+            
+            // Próximas reservas
+            const reservasList = document.getElementById('dash-reservas-list');
+            const proximas = reservas.slice(0, 3);
+            if (proximas.length === 0) {
+                reservasList.innerHTML = '<p class="text-muted">Nenhuma reserva próxima</p>';
+            } else {
+                reservasList.innerHTML = proximas.map(r => `
+                    <div class="mb-2 p-2 bg-light rounded">
+                        <strong>${r.condomino_nome}</strong><br>
+                        <small>Apto ${r.apt} - ${new Date(r.data).toLocaleDateString('pt-BR')}</small>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // ===== CONDÔMINOS =====
+        function renderCondominos() {
+            const condominoes = Store.get('condominoes');
+            const tbody = document.getElementById('tabela-condominos');
+            
+            tbody.innerHTML = condominoes.map(c => {
+                let status = '';
+                if (c.cargo !== 'Morador') status = '<span class="badge bg-warning">Fixa (Cargo)</span>';
+                else if (c.veiculos === 1) status = '<span class="badge bg-purple" style="background:#9b59b6">Auto (1 veh)</span>';
+                else status = '<span class="badge bg-success">Participa Sorteio</span>';
+                
+                return `
+                <tr>
+                    <td>${c.nome}</td>
+                    <td>${c.apt}</td>
+                    <td><span class="badge bg-${c.cargo === 'Sindico' ? 'primary' : c.cargo === 'Subsindico' ? 'secondary' : 'light text-dark'}">${c.cargo}</span></td>
+                    <td>${c.veiculos}</td>
+                    <td>${status}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removerCondomino(${c.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+            
+            // Atualizar selects
+            const selectRes = document.getElementById('res-condomino');
+            const selectChat = document.getElementById('chat-condomino');
+            selectRes.innerHTML = '<option value="">Selecione...</option>' + 
+                condominoes.map(c => `<option value="${c.id}" data-apt="${c.apt}">${c.nome} - Apto ${c.apt}</option>`).join('');
+            selectChat.innerHTML = '<option value="">Você é...</option>' + 
+                condominoes.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+        }
+
+        function salvarCondomino(e) {
+            e.preventDefault();
+            const condominoes = Store.get('condominoes');
+            const novo = {
+                id: Date.now(),
+                nome: document.getElementById('cond-nome').value,
+                apt: document.getElementById('cond-apt').value,
+                cargo: document.getElementById('cond-cargo').value,
+                veiculos: parseInt(document.getElementById('cond-veiculos').value)
+            };
+            
+            condominoes.push(novo);
+            Store.set('condominoes', condominoes);
+            
+            // Se tem 1 veículo, atribuir vaga automática
+            if (novo.veiculos === 1 && novo.cargo === 'Morador') {
+                const garagens = Store.get('garagens');
+                const vagaLivre = garagens.find(g => !g.ocupada && !g.fixa);
+                if (vagaLivre) {
+                    vagaLivre.ocupada = true;
+                    vagaLivre.unidade = novo.apt;
+                    vagaLivre.tipo = 'auto';
+                    vagaLivre.condomino_id = novo.id;
+                    Store.set('garagens', garagens);
+                    alert(`Condômino cadastrado! Vaga ${vagaLivre.numero} atribuída automaticamente (1 veículo).`);
+                }
+            }
+            
+            bootstrap.Modal.getInstance(document.getElementById('condominoModal')).hide();
+            e.target.reset();
+            updateView();
+        }
+
+        function removerCondomino(id) {
+            if (confirm('Remover condômino?')) {
+                let condominoes = Store.get('condominoes');
+                const cond = condominoes.find(c => c.id === id);
+                condominoes = condominoes.filter(c => c.id !== id);
+                Store.set('condominoes', condominoes);
+                
+                // Liberar vaga se ocupada
+                const garagens = Store.get('garagens');
+                const vaga = garagens.find(g => g.condomino_id === id);
+                if (vaga) {
+                    vaga.ocupada = false;
+                    vaga.unidade = null;
+                    vaga.condomino_id = null;
+                    vaga.tipo = vaga.fixa ? 'fixa' : 'sorteada';
+                    Store.set('garagens', garagens);
+                }
+                
+                updateView();
+            }
+        }
+
+        // ===== GARAGENS =====
+        function renderGaragens() {
+            const garagens = Store.get('garagens');
+            const container = document.getElementById('mapa-garagens');
+            
+            container.innerHTML = garagens.map(g => {
+                let classe = g.fixa ? 'garage-fixed' : g.ocupada ? (g.tipo === 'auto' ? 'garage-auto' : 'garage-occupied') : 'garage-free';
+                let info = g.ocupada ? `<small>${g.unidade}</small>` : '<small>Livre</small>';
+                return `
+                <div class="garage-slot ${classe}">
+                    <small>Vaga ${g.numero}</small>
+                    ${info}
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ===== SORTEIO =====
+        function realizarSorteio() {
+            const loading = document.getElementById('loading');
+            loading.style.display = 'flex';
+            
+            setTimeout(() => {
+                const condominoes = Store.get('condominoes');
+                const garagens = Store.get('garagens');
+                
+                // Filtrar elegíveis: cargo = Morador E veiculos > 1 E sem vaga ainda
+                const elegiveis = condominoes.filter(c => {
+                    if (c.cargo !== 'Morador') return false;
+                    if (c.veiculos <= 1) return false;
+                    const temVaga = garagens.some(g => g.condomino_id === c.id && g.ocupada);
+                    return !temVaga;
+                });
+                
+                // Vagas disponíveis (não fixas, não ocupadas)
+                const vagasDisponiveis = garagens.filter(g => !g.fixa && !g.ocupada);
+                
+                if (elegiveis.length === 0) {
+                    alert('Não há condôminos elegíveis para o sorteio!');
+                    loading.style.display = 'none';
+                    return;
+                }
+                
+                if (vagasDisponiveis.length < elegiveis.length) {
+                    alert(`Vagas insuficientes! Vagas: ${vagasDisponiveis.length}, Elegíveis: ${elegiveis.length}`);
+                    loading.style.display = 'none';
+                    return;
+                }
+                
+                // Fisher-Yates shuffle
+                const shuffle = (array) => {
+                    const arr = [...array];
+                    for (let i = arr.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [arr[i], arr[j]] = [arr[j], arr[i]];
+                    }
+                    return arr;
+                };
+                
+                const vagasEmbaralhadas = shuffle(vagasDisponiveis);
+                const elegiveisEmbaralhados = shuffle(elegiveis);
+                
+                const resultados = [];
+                
+                elegiveisEmbaralhados.forEach((cond, index) => {
+                    const vaga = vagasEmbaralhadas[index];
+                    vaga.ocupada = true;
+                    vaga.unidade = cond.apt;
+                    vaga.condomino_id = cond.id;
+                    vaga.tipo = 'sorteada';
+                    
+                    resultados.push({
+                        ordem: index + 1,
+                        condomino: cond.nome,
+                        apt: cond.apt,
+                        vaga: vaga.numero,
+                        tipo: 'Sorteada'
+                    });
+                });
+                
+                Store.set('garagens', garagens);
+                Store.set('resultados', resultados);
+                
+                // Mostrar resultado
+                const div = document.getElementById('resultado-sorteio');
+                const tbody = document.getElementById('tabela-resultado');
+                div.classList.remove('d-none');
+                
+                tbody.innerHTML = resultados.map(r => `
+                    <tr class="sorteio-animation">
+                        <td>${r.ordem}º</td>
+                        <td><strong>${r.condomino}</strong></td>
+                        <td>Apto ${r.apt}</td>
+                        <td><span class="badge bg-danger">Vaga ${r.vaga}</span></td>
+                        <td><span class="badge bg-success">${r.tipo}</span></td>
+                    </tr>
+                `).join('');
+                
+                loading.style.display = 'none';
+                updateView();
+                
+            }, 1500);
+        }
+
+        // ===== RESERVAS =====
+        function renderReservas() {
+            const reservas = Store.get('reservas');
+            const condominoes = Store.get('condominoes');
+            const container = document.getElementById('lista-reservas');
+            
+            if (reservas.length === 0) {
+                container.innerHTML = '<div class="col-12 text-center text-muted"><p>Nenhuma reserva encontrada</p></div>';
+                return;
+            }
+            
+            container.innerHTML = reservas.map(r => {
+                const cond = condominoes.find(c => c.id == r.condomino_id);
+                return `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between">
+                            <span>Reserva #${r.id}</span>
+                            <span class="badge bg-light text-dark">${r.status || 'Confirmada'}</span>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">${cond ? cond.nome : 'Desconhecido'}</h5>
+                            <p class="card-text">
+                                <i class="bi bi-building"></i> Apto ${r.apt}<br>
+                                <i class="bi bi-calendar"></i> ${new Date(r.data).toLocaleDateString('pt-BR')}<br>
+                                <i class="bi bi-clock"></i> ${r.inicio} às ${r.fim}<br>
+                                <small class="text-muted">${r.obs || 'Sem observações'}</small>
+                            </p>
+                            <button class="btn btn-outline-primary btn-sm w-100" onclick="gerarPDFReserva(${r.id})">
+                                <i class="bi bi-file-earmark-pdf"></i> Baixar Comprovante
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function salvarReserva(e) {
+            e.preventDefault();
+            const reservas = Store.get('reservas');
+            const select = document.getElementById('res-condomino');
+            const condomino_id = select.value;
+            const apt = select.options[select.selectedIndex].getAttribute('data-apt');
+            
+            const nova = {
+                id: Date.now(),
+                condomino_id: condomino_id,
+                apt: apt,
+                data: document.getElementById('res-data').value,
+                inicio: document.getElementById('res-inicio').value,
+                fim: document.getElementById('res-fim').value,
+                obs: document.getElementById('res-obs').value,
+                status: 'Confirmada'
+            };
+            
+            reservas.push(nova);
+            Store.set('reservas', reservas);
+            
+            bootstrap.Modal.getInstance(document.getElementById('reservaModal')).hide();
+            e.target.reset();
+            updateView();
+        }
+
+        // ===== UTENSÍLIOS =====
+        function renderUtensilios() {
+            const utensilios = Store.get('utensilios');
+            const tbody = document.getElementById('tabela-utensilios');
+            
+            tbody.innerHTML = utensilios.map(u => `
+                <tr>
+                    <td><i class="bi bi-box-seam"></i> ${u.nome}</td>
+                    <td>${u.total}</td>
+                    <td>${u.disponivel}</td>
+                    <td>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-success" style="width: ${(u.disponivel/u.total)*100}%">
+                                ${Math.round((u.disponivel/u.total)*100)}%
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ===== CHAT =====
+        function renderChat() {
+            const mensagens = Store.get('mensagens');
+            const container = document.getElementById('chat-messages');
+            const condominoes = Store.get('condominoes');
+            
+            container.innerHTML = mensagens.map(m => {
+                const ehMinha = m.condomino_id == document.getElementById('chat-condomino').value;
+                return `
+                <div class="message ${ehMinha ? 'message-sent' : 'message-received'}">
+                    <small class="d-block fw-bold ${ehMinha ? 'text-success' : 'text-primary'}">${m.nome}</small>
+                    ${m.texto}
+                    <small class="d-block text-end text-muted" style="font-size:0.7rem">${m.hora}</small>
+                </div>
+                `;
+            }).join('');
+            
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function enviarMensagem(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const select = document.getElementById('chat-condomino');
+            const texto = input.value;
+            const condomino_id = select.value;
+            
+            if (!condomino_id) {
+                alert('Selecione um condômino primeiro!');
+                return;
+            }
+            
+            const condominoes = Store.get('condominoes');
+            const cond = condominoes.find(c => c.id == condomino_id);
+            
+            const mensagens = Store.get('mensagens');
+            mensagens.push({
+                id: Date.now(),
+                condomino_id: condomino_id,
+                nome: cond.nome,
+                texto: texto,
+                hora: new Date().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})
+            });
+            
+            Store.set('mensagens', mensagens);
+            input.value = '';
+            renderChat();
+        }
+
+        // ===== PDF GENERATION =====
+        function gerarPDFReserva(id) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const reservas = Store.get('reservas');
+            const reserva = reservas.find(r => r.id === id);
+            const condominoes = Store.get('condominoes');
+            const cond = condominoes.find(c => c.id == reserva.condomino_id);
+            
+            doc.setFontSize(20);
+            doc.text("CondoCheck Pro", 105, 20, {align: "center"});
+            doc.setFontSize(16);
+            doc.text("Comprovante de Reserva", 105, 35, {align: "center"});
+            
+            doc.setFontSize(12);
+            doc.text(`Reserva #: ${reserva.id}`, 20, 60);
+            doc.text(`Condômino: ${cond ? cond.nome : ''}`, 20, 70);
+            doc.text(`Apartamento: ${reserva.apt}`, 20, 80);
+            doc.text(`Data: ${new Date(reserva.data).toLocaleDateString('pt-BR')}`, 20, 90);
+            doc.text(`Horário: ${reserva.inicio} às ${reserva.fim}`, 20, 100);
+            doc.text(`Observações: ${reserva.obs || 'Nenhuma'}`, 20, 110);
+            doc.text(`Status: ${reserva.status}`, 20, 120);
+            
+            doc.setFontSize(10);
+            doc.text("Documento gerado automaticamente pelo sistema CondoCheck", 105, 150, {align: "center"});
+            
+            doc.save(`reserva_${reserva.apt}_${reserva.data}.pdf`);
+        }
+
+        function gerarPDFUtensilios() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const utensilios = Store.get('utensilios');
+            
+            doc.setFontSize(20);
+            doc.text("CondoCheck Pro", 105, 20, {align: "center"});
+            doc.setFontSize(16);
+            doc.text("Relação de Utensílios - Salão de Festas", 105, 35, {align: "center"});
+            
+            doc.setFontSize(12);
+            let y = 60;
+            doc.text("Item", 20, y);
+            doc.text("Qtd Total", 80, y);
+            doc.text("Disponível", 120, y);
+            doc.text("Status", 160, y);
+            y += 10;
+            
+            utensilios.forEach(u => {
+                doc.text(u.nome, 20, y);
+                doc.text(u.total.toString(), 80, y);
+                doc.text(u.disponivel.toString(), 120, y);
+                const status = u.disponivel > 0 ? 'Disponível' : 'Esgotado';
+                doc.text(status, 160, y);
+                y += 10;
+            });
+            
+            doc.save("utensilios_cozinha.pdf");
+        }
+
+        // ===== UPDATE ALL =====
+        function updateView() {
+            updateDashboard();
+            renderCondominos();
+            renderGaragens();
+            renderReservas();
+            renderUtensilios();
+            renderChat();
+        }
+
+        // ===== INIT =====
+        window.onload = function() {
+            Store.init();
+            updateView();
+            
+            // Atualizar chat quando mudar o select
+            document.getElementById('chat-condomino').addEventListener('change', renderChat);
+        };
+    </script>
+</body>
+</html>
